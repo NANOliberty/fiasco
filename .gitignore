@@ -8,3 +8,4 @@ dist/
 .DS_Store
 *.log
 .env
+frontend/smoke-shots/
