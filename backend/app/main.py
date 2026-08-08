@@ -205,10 +205,12 @@ async def websocket_endpoint(websocket: WebSocket, code: str, playerId: str = ""
         log.exception("websocket loop failed")
     finally:
         room.detach(player_id, websocket)
-        # 로비에서 나간 사람은 자리를 비워 준다.
         async with room.lock:
+            # 로비에서 나간 사람은 자리를 비워 준다. 게임 중이라면 자리는 남겨
+            # 두고(토큰으로 돌아올 수 있다) 방장만 남은 사람에게 넘긴다.
             if room.state["phase"] == "lobby":
                 game.remove_player(room.state, player_id)
+            game.transfer_host_if_gone(room.state)
         await broadcast(room)
 
 

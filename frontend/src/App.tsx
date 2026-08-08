@@ -93,6 +93,12 @@ function Screen() {
 function Room({ session, onLeave }: { session: Session; onLeave: () => void }) {
   const connection = useConnection(session)
 
+  // 자리가 사라진 뒤에도 저장된 참가 정보를 들고 있으면 새로고침할 때마다 같은
+  // 곳에서 막힌다. 거절당한 순간 지워서 다음 입장이 새로 시작되게 한다.
+  useEffect(() => {
+    if (connection.fatal) sessionStore.clear(session.roomCode)
+  }, [connection.fatal, session.roomCode])
+
   if (connection.fatal) {
     return (
       <div className="landing">

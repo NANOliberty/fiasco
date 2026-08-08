@@ -194,6 +194,24 @@ def remove_player(state: dict[str, Any], player_id: str) -> None:
     _log(state, f"{player['name']} 님이 나갔습니다.", "leave")
 
 
+def transfer_host_if_gone(state: dict[str, Any]) -> bool:
+    """방장이 접속을 끊었으면 남아 있는 사람에게 방장을 넘긴다.
+
+    방장만 할 수 있는 일(준비 마치기, 강제 진행, 되돌리기)이 있어서, 방장이
+    창을 닫아 버리면 게임이 그 자리에서 멈춘다. 원래 방장이 돌아와도 자동으로
+    되돌리지는 않는다 — 진행 중에 권한이 왔다 갔다 하는 편이 더 헷갈린다.
+    """
+    host = player_by_id(state, state["hostId"])
+    if host is not None and host["connected"]:
+        return False
+    successor = next((p for p in state["players"] if p["connected"]), None)
+    if successor is None or successor["id"] == state["hostId"]:
+        return False
+    state["hostId"] = successor["id"]
+    _log(state, f"방장이 자리를 비워 {successor['name']} 님이 방장이 되었습니다.", "info", successor["id"])
+    return True
+
+
 def _require_host(state: dict[str, Any], player_id: str) -> None:
     if state["hostId"] != player_id:
         raise GameError("방장만 할 수 있습니다.")

@@ -184,6 +184,42 @@ def test_disconnect_frees_the_seat_in_lobby(client):
     assert client.get(f"/api/rooms/{code}").json()["playerCount"] == 0
 
 
+def test_host_moves_on_when_the_host_disconnects_mid_game(client):
+    code = make_room(client)
+    creds = [join(client, code, f"P{i}") for i in range(3)]
+    sockets = [client.websocket_connect(ws_url(code, c)).__enter__() for c in creds]
+    try:
+        host = sockets[0]
+        act(host, "set_playset", {"playsetId": "boomtown"})
+        act(host, "start_game")
+        state = read_state_where(host, lambda s: s["phase"] == "setup")
+        assert state["hostId"] == creds[0]["playerId"]
+    finally:
+        sockets[0].__exit__(None, None, None)  # 방장이 창을 닫는다
+
+    try:
+        # 자리는 남지만 방장은 남은 사람에게 넘어간다
+        state = read_state_where(sockets[1], lambda s: s["hostId"] != creds[0]["playerId"])
+        assert state["hostId"] in {creds[1]["playerId"], creds[2]["playerId"]}
+        assert len(state["players"]) == 3
+        gone = next(p for p in state["players"] if p["id"] == creds[0]["playerId"])
+        assert gone["connected"] is False
+    finally:
+        for socket in sockets[1:]:
+            socket.__exit__(None, None, None)
+
+
+def test_kicked_player_cannot_reuse_stale_credentials(client):
+    """로비에서 나가면 자리가 사라지고, 옛 토큰으로는 다시 들어올 수 없다."""
+    code = make_room(client)
+    creds = join(client, code, "잠깐")
+    with client.websocket_connect(ws_url(code, creds)) as socket:
+        read_state(socket)
+    with client.websocket_connect(ws_url(code, creds)) as socket:
+        message = json.loads(socket.receive_text())
+        assert message["type"] == "fatal"
+
+
 def test_custom_playset_upload(client):
     def table(prefix: str) -> dict:
         return {f"{prefix}분류{c}": [f"{prefix}요소{c}-{e}" for e in range(1, 7)] for c in range(1, 7)}
