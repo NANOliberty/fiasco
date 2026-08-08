@@ -14,18 +14,35 @@
 
 채팅과 음성은 만들지 않았습니다. 통화는 디스코드 같은 걸 따로 켜 두고 쓰세요.
 
-## 빠르게 띄우기
+## 실행
+
+필요한 것은 **Python 3.10 이상**과 **Node 18 이상**뿐입니다. 나머지는 스크립트가 알아서 설치합니다.
 
 ```bash
-./run.sh serve          # 프론트를 빌드해 http://localhost:8000 한 대로 서비스
+git clone https://github.com/NANOliberty/fiasco.git
+cd fiasco
+./run.sh
 ```
 
-개발 중에는 백엔드와 프론트를 따로 띄웁니다.
+`http://localhost:8000` 이 열립니다. 처음 한 번은 패키지를 받느라 1~2분 걸리고, 그다음부터는 바로 뜹니다.
+파이썬 패키지는 `backend/.venv` 안에만 설치하니 시스템 파이썬은 건드리지 않습니다.
+
+친구들과 하려면 그 주소를 밖에서 접근할 수 있게 열어야 합니다. 가장 간단한 방법은 터널입니다.
 
 ```bash
-cd backend && pip install -r requirements-dev.txt
-cd ../frontend && npm install
-cd .. && ./run.sh dev   # 백엔드 8000, 프론트 5173 (프록시로 /api 와 /ws 를 넘김)
+ngrok http 8000          # 또는  cloudflared tunnel --url http://localhost:8000
+```
+
+받은 주소를 친구들에게 보내고, 방을 만든 뒤 `링크 복사`로 나온 링크를 나눠 주면 됩니다.
+
+포트를 바꾸려면 `PORT=3000 ./run.sh` 처럼 씁니다.
+
+### 그 밖의 명령
+
+```bash
+./run.sh dev      # 코드 고치면 바로 반영 — 백엔드 8000, 화면은 http://localhost:5173
+./run.sh test     # 파이썬 테스트 + 프론트 타입 검사
+./run.sh smoke    # 브라우저 3개로 한 판을 끝까지 자동 진행 (서버가 떠 있어야 함)
 ```
 
 ## 구조
@@ -136,19 +153,20 @@ frontend/
 ## 테스트
 
 ```bash
-./run.sh test            # 파이썬 테스트 + 프론트 타입 검사
+./run.sh test
 ```
 
 `backend/tests` 는 게임을 프로그램으로 끝까지 여러 번 돌려 봅니다. 무작위 순서로 진행해도 항상 끝나는지,
 막의 경계가 정확한지, 규칙 위반이 거절되는지를 확인합니다.
 
-브라우저 3개를 띄워 실제로 한 판을 끝까지 진행하는 스모크 테스트도 있습니다. 서버가 떠 있어야 합니다.
+브라우저 3개를 띄워 실제로 한 판을 끝까지 진행하는 스모크 테스트도 있습니다. 서버를 띄워 둔 채로
+다른 터미널에서 돌리세요. 화면 캡처가 `frontend/smoke-shots/` 에 남습니다.
 
 ```bash
-cd frontend
-npm install -D playwright && npx playwright install chromium
-npm run smoke            # 화면 캡처는 frontend/smoke-shots/ 에 남습니다
+./run.sh smoke
 ```
+
+이미 크로미움이 깔린 환경이라 내려받기를 건너뛰고 싶으면 `CHROME_PATH=/경로/chrome ./run.sh smoke`.
 
 ## API
 

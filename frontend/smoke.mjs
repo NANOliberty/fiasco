@@ -11,7 +11,9 @@ import fs from 'node:fs'
 
 const BASE = process.env.BASE_URL ?? 'http://127.0.0.1:8000'
 const SHOTS = process.env.SHOT_DIR ?? './smoke-shots'
-const CHROME = process.env.CHROME_PATH ?? '/opt/pw-browsers/chromium-1194/chrome-linux/chrome'
+// 기본은 playwright 가 받아 둔 크로미움. 이미 브라우저가 있는 환경이면
+// CHROME_PATH 로 그 경로를 알려 주면 된다.
+const CHROME = process.env.CHROME_PATH
 
 fs.mkdirSync(SHOTS, { recursive: true })
 
@@ -21,7 +23,7 @@ async function shot(page, name) {
   await page.screenshot({ path: `${SHOTS}/${String(++shotIndex).padStart(2, '0')}-${name}.png`, fullPage: true })
 }
 
-const browser = await chromium.launch({ executablePath: CHROME })
+const browser = await chromium.launch(CHROME ? { executablePath: CHROME } : {})
 const errors = []
 let pages = []
 
